@@ -39,4 +39,5 @@ add_custom_command(
         BonDriver_EPGStation_test
     POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:BonDriver_EPGStation> ${CMAKE_BINARY_DIR}/test/
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_SOURCE_DIR}/BonDriver_EPGStation.yml ${CMAKE_BINARY_DIR}/test/
 )
