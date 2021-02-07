@@ -1,3 +1,7 @@
+//
+// @author magicxqq <xqq@xqq.im>
+//
+
 #ifndef BONDRIVER_EPGSTATION_LIBRARY_HPP
 #define BONDRIVER_EPGSTATION_LIBRARY_HPP
 
