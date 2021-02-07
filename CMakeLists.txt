@@ -18,12 +18,18 @@ add_subdirectory(thirdparty/yaml-cpp)
 
 add_library(BonDriver_EPGStation
     SHARED
-        src/library.cpp
-        src/library.h
         include/IBonDriver.h
-        include/min_win32_typedef.hpp
         include/IBonDriver2.h
+        include/min_win32_typedef.hpp
         include/export.hpp
+        src/bon_driver.cpp
+        src/bon_driver.hpp
+        src/config.cpp
+        src/config.hpp
+        src/library.cpp
+        src/library.hpp
+        src/log.cpp
+        src/log.hpp
 )
 
 # Remove "lib" prefix for dll filename
