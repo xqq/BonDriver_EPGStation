@@ -5,8 +5,6 @@
 #ifndef BONDRIVER_EPGSTATION_LOG_HPP
 #define BONDRIVER_EPGSTATION_LOG_HPP
 
-using cstr = const char * const;
-
 static constexpr const char* file_name(const char* path) {
     const char* name = path;
     while (*path) {
@@ -41,9 +39,16 @@ static constexpr const char* file_name(const char* path) {
 class Log {
 public:
     static void Info(const char* str);
+    static void Info(const wchar_t* str);
+
     static void InfoF(const char* format, ...);
+    static void InfoF(const wchar_t* format, ...);
+
     static void Error(const char* str);
+    static void Error(const wchar_t* str);
+
     static void ErrorF(const char* format, ...);
+    static void ErrorF(const wchar_t* format, ...);
 };
 
 
