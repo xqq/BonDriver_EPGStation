@@ -27,7 +27,7 @@ void Log::Info(const char* str) {
 
 void Log::Info(const wchar_t* str) {
     wchar_t buffer[512] = {0};
-    swprintf(buffer, L"[%ls] INFO: %ls\n", LOG_TAG_W, str);
+    swprintf_s(buffer, L"[%ls] INFO: %ls\n", LOG_TAG_W, str);
 
 #ifdef _WIN32
     OutputDebugStringW(buffer);
@@ -57,11 +57,11 @@ void Log::InfoF(const wchar_t* format, ...) {
     wchar_t formatted[512] = {0};
     va_list vaList;
     va_start(vaList, format);
-    vswprintf(formatted, format, vaList);
+    vswprintf_s(formatted, format, vaList);
     va_end(vaList);
 
     wchar_t buffer[512] = {0};
-    swprintf(buffer, L"[%ls] INFO: %ls\n", LOG_TAG_W, formatted);
+    swprintf_s(buffer, L"[%ls] INFO: %ls\n", LOG_TAG_W, formatted);
 
 #ifdef _WIN32
     OutputDebugStringW(buffer);
@@ -83,7 +83,7 @@ void Log::Error(const char* str) {
 
 void Log::Error(const wchar_t* str) {
     wchar_t buffer[512] = {0};
-    swprintf(buffer, L"[%ls] ERROR: %ls\n", LOG_TAG_W, str);
+    swprintf_s(buffer, L"[%ls] ERROR: %ls\n", LOG_TAG_W, str);
 
 #ifdef _WIN32
     OutputDebugStringW(buffer);
@@ -113,11 +113,11 @@ void Log::ErrorF(const wchar_t* format, ...) {
     wchar_t formatted[512] = {0};
     va_list vaList;
     va_start(vaList, format);
-    vswprintf(formatted, format, vaList);
+    vswprintf_s(formatted, format, vaList);
     va_end(vaList);
 
     wchar_t buffer[512] = {0};
-    swprintf(buffer, L"[%ls] ERROR: %ls\n", LOG_TAG_W, formatted);
+    swprintf_s(buffer, L"[%ls] ERROR: %ls\n", LOG_TAG_W, formatted);
 
 #ifdef _WIN32
     OutputDebugStringW(buffer);
