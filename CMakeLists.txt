@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.15)
 project(BonDriver_EPGStation LANGUAGES C CXX)
 
 # main project checking
@@ -13,6 +13,12 @@ option(BONDRIVER_EPGSTATION_BUILD_TEST "Build test program." ${MAIN_PROJECT})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(YAML_CPP_BUILD_TOOLS OFF)
+set(YAML_MSVC_SHARED_RT OFF)
+
+find_package(cpprestsdk REQUIRED)
+
+#add_subdirectory(thirdparty/cpprestsdk)
 add_subdirectory(thirdparty/json)
 add_subdirectory(thirdparty/yaml-cpp)
 
@@ -39,6 +45,13 @@ endif()
 
 # Platform-specific compiler macro / flags
 if(MSVC)
+    # For MSVC, static link runtime library (MultiThreaded)
+    set_property(
+        TARGET
+            BonDriver_EPGStation
+        PROPERTY
+            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+    )
     # For MSVC, disable CRT secure warnings
     target_compile_definitions(BonDriver_EPGStation
         PRIVATE
@@ -73,6 +86,7 @@ target_link_directories(BonDriver_EPGStation
 # Linking
 target_link_libraries(BonDriver_EPGStation
     PRIVATE
+        cpprestsdk::cpprest
         nlohmann_json::nlohmann_json
         yaml-cpp
 )
@@ -110,7 +124,6 @@ endif()
 if(WIN32)
     target_link_libraries(BonDriver_EPGStation
         PRIVATE
-            Imm32
             Winmm
             Version
             SetupAPI
