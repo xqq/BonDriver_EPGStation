@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
+
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
+
 project(BonDriver_EPGStation LANGUAGES C CXX)
 
 # main project checking
@@ -15,6 +20,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(YAML_CPP_BUILD_TOOLS OFF)
 set(YAML_MSVC_SHARED_RT OFF)
+
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+endif()
 
 find_package(cpprestsdk REQUIRED)
 
@@ -46,12 +55,22 @@ endif()
 # Platform-specific compiler macro / flags
 if(MSVC)
     # For MSVC, static link runtime library (MultiThreaded)
-    set_property(
-        TARGET
-            BonDriver_EPGStation
-        PROPERTY
-            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-    )
+    if(${CMAKE_VERSION} VERSION_LESS "3.15")
+        target_compile_options(BonDriver_EPGStation
+            PUBLIC
+                $<$<CONFIG:Debug>:-MTd>
+                $<$<CONFIG:Release>:-MT>
+                $<$<CONFIG:RelWithDebInfo>:-MT>
+        )
+    else()
+        set_property(
+            TARGET
+                BonDriver_EPGStation
+            PROPERTY
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+        )
+    endif()
+
     # For MSVC, disable CRT secure warnings
     target_compile_definitions(BonDriver_EPGStation
         PRIVATE
@@ -60,7 +79,7 @@ if(MSVC)
 elseif(MINGW)
     # For MinGW, static linking runtime library
     target_compile_options(BonDriver_EPGStation
-        PRIVATE
+        PUBLIC
             -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive -Wl,-Bdynamic
     )
 endif()
@@ -79,14 +98,15 @@ target_include_directories(BonDriver_EPGStation
 )
 
 # Link directories
-target_link_directories(BonDriver_EPGStation
-    PRIVATE
-)
+#target_link_directories(BonDriver_EPGStation
+#    PRIVATE
+#)
 
 # Linking
 target_link_libraries(BonDriver_EPGStation
     PRIVATE
         cpprestsdk::cpprest
+        #cpprest
         nlohmann_json::nlohmann_json
         yaml-cpp
 )
