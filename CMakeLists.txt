@@ -45,6 +45,8 @@ add_library(BonDriver_EPGStation
         src/library.hpp
         src/log.cpp
         src/log.hpp
+        src/utils.cpp
+        src/utils.hpp
 )
 
 # Remove "lib" prefix for dll filename
