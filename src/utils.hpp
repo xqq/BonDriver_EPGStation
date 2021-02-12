@@ -9,8 +9,10 @@
 
 #ifdef _WIN32
     #define UTF8ToPlatformString(a) Utils::UTF8ToWideString(a)
+    #define PlatformStringToUTF8(a) Utils::WideStringToUTF8(a)
 #else
     #define UTF8ToPlatformString(a) a
+    #define PlatformStringToUTF8(a) a
 #endif
 
 namespace Utils {
