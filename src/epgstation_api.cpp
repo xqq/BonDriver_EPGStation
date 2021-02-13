@@ -15,6 +15,7 @@ using json = nlohmann::json;
 
 static const char* kEPGStationAPIConfig = "/api/config";
 static const char* kEPGStationAPIChannels = "/api/channels";
+static const char* kEPGStationAPIStreamsLive = "/api/streams/live/";
 
 EPGStationAPI::EPGStationAPI(const std::string& base_url) : base_url_(base_url), has_basic_auth_(false) { }
 
@@ -106,4 +107,12 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
     }
 
     return succeed ? std::make_optional(std::move(channels)) : std::nullopt;
+}
+
+std::string EPGStationAPI::GetMpegtsLiveStreamPathQuery(int64_t id, int encode_mode) {
+    std::string path_query = kEPGStationAPIStreamsLive;
+    path_query.append(std::to_string(id));
+    path_query.append("/mpegts?mode=");
+    path_query.append(std::to_string(encode_mode));
+    return path_query;
 }

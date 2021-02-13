@@ -17,6 +17,7 @@ public:
     bool SetBasicAuth(const std::string& user, const std::string& password);
     std::optional<EPGStation::Config> GetConfig();
     std::optional<EPGStation::Channels> GetChannels();
+    std::string GetMpegtsLiveStreamPathQuery(int64_t id, int encode_mode);
 private:
     std::string base_url_;
     bool has_basic_auth_;
