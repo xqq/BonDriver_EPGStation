@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -20,6 +20,14 @@ elseif(MINGW)
     target_compile_options(BonDriver_EPGStation_test
         PRIVATE
             -static-libgcc -static-libstdc++ -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive -Wl,-Bdynamic
+    )
+endif()
+
+if(WIN32)
+    target_compile_definitions(BonDriver_EPGStation_test
+        PRIVATE
+            UNICODE
+            _UNICODE
     )
 endif()
 

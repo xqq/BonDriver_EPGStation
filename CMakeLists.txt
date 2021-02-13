@@ -58,6 +58,15 @@ if(WIN32)
     set_target_properties(BonDriver_EPGStation PROPERTIES PREFIX "")
 endif()
 
+# On Windows, Set Character set (TCHAR) to Unicode
+if(WIN32)
+    target_compile_definitions(BonDriver_EPGStation
+        PRIVATE
+            UNICODE
+            _UNICODE
+    )
+endif()
+
 # Platform-specific compiler macro / flags
 if(MSVC)
     # For MSVC, static link runtime library (MultiThreaded)
