@@ -41,6 +41,7 @@ add_library(BonDriver_EPGStation
         src/bon_driver.hpp
         src/config.cpp
         src/config.hpp
+        src/epgstation_models.hpp
         src/library.cpp
         src/library.hpp
         src/log.cpp
