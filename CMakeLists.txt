@@ -49,6 +49,8 @@ add_library(BonDriver_EPGStation
         src/library.hpp
         src/log.cpp
         src/log.hpp
+        src/noncopyable.hpp
+        src/scope_guard.hpp
         src/utils.cpp
         src/utils.hpp
 )
@@ -76,6 +78,7 @@ if(MSVC)
                 $<$<CONFIG:Debug>:-MTd>
                 $<$<CONFIG:Release>:-MT>
                 $<$<CONFIG:RelWithDebInfo>:-MT>
+                $<$<CONFIG:MinSizeRel>:-MT>
         )
     else()
         set_property(
