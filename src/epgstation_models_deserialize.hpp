@@ -6,7 +6,6 @@
 #define BONDRIVER_EPGSTATION_EPGSTATION_MODELS_DESERIALIZE_HPP
 
 #include <cassert>
-#include <cpprest/json.h>
 #include <nlohmann/json.hpp>
 #include "epgstation_models.hpp"
 
