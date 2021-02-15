@@ -36,6 +36,10 @@ static constexpr const char* file_name(const char* path) {
     #define LOG_FILE_FUNCTION_MESSAGE(m) "%s:%d:%s():%s",__SHORT_FILE__,__LINE__,__FUNCTION_NAME__,m
 #endif
 
+#ifndef LOG_FILE_MESSAGE
+    #define LOG_FILE_MESSAGE(m) "%s:%d: %s",__SHORT_FILE__,__LINE__,m
+#endif
+
 class Log {
 public:
     static void Info(const char* str);
