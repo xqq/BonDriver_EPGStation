@@ -37,6 +37,8 @@ add_library(BonDriver_EPGStation
         include/IBonDriver2.h
         include/min_win32_typedef.hpp
         include/export.hpp
+        src/blocking_buffer.cpp
+        src/blocking_buffer.hpp
         src/bon_driver.cpp
         src/bon_driver.hpp
         src/config.cpp
