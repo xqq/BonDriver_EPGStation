@@ -22,6 +22,7 @@ public:
     ~BlockingBuffer();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
     size_t Write(const uint8_t* buffer, size_t bytes);
+    size_t WriteChunk(const std::vector<uint8_t>& vec);
     size_t WriteChunk(std::vector<uint8_t>&& vec);
     void WaitUntilData();
     void WaitUntilEmpty();

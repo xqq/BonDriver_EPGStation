@@ -35,7 +35,7 @@ size_t BlockingBuffer::Read(uint8_t* buffer, size_t expected_bytes) {
     if (has_chunk_count_limit_ && deque_.size() < min_chunk_count_) {
         // consumer standby, waiting notify message from the producer
         consume_cv_.wait(locker, [this] {
-            return deque_.size() > min_chunk_count_ || is_exit_;
+            return deque_.size() >= min_chunk_count_ || is_exit_;
         });
     }
 
@@ -121,6 +121,28 @@ size_t BlockingBuffer::Write(const uint8_t *buffer, size_t bytes) {
     return bytes_written;
 }
 
+size_t BlockingBuffer::WriteChunk(const std::vector<uint8_t>& vec) {
+    // I am the data producer
+    assert(vec.size() == chunk_size_);
+
+    std::unique_lock locker(mutex_);
+
+    if (has_chunk_count_limit_ && deque_.size() >= max_chunk_count_) {
+        // producer standby, waiting notify message from the consumer
+        produce_cv_.wait(locker, [this] {
+            return deque_.size() < max_chunk_count_ || is_exit_;
+        });
+    }
+
+    size_t bytes = vec.size();
+    std::vector<uint8_t> vec_clone = vec;
+    deque_.emplace_back(std::move(vec_clone));
+
+    // Notify the consumer to consume data
+    consume_cv_.notify_one();
+    return bytes;
+}
+
 size_t BlockingBuffer::WriteChunk(std::vector<uint8_t>&& vec) {
     // I am the data producer
     assert(vec.size() == chunk_size_);
@@ -145,9 +167,15 @@ size_t BlockingBuffer::WriteChunk(std::vector<uint8_t>&& vec) {
 void BlockingBuffer::WaitUntilData() {
     std::unique_lock locker(mutex_);
 
-    consume_cv_.wait(locker, [this] {
-        return !deque_.empty() || is_exit_;
-    });
+    if (has_chunk_count_limit_) {
+        consume_cv_.wait(locker, [this] {
+            return deque_.size() >= min_chunk_count_ || is_exit_;
+        });
+    } else {
+        consume_cv_.wait(locker, [this] {
+            return !deque_.empty() || is_exit_;
+        });
+    }
 }
 
 void BlockingBuffer::WaitUntilEmpty() {
