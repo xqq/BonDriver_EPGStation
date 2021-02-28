@@ -4,7 +4,6 @@
 
 #include <vector>
 #include <cpprest/http_client.h>
-#include <cpprest/producerconsumerstream.h>
 #include "log.hpp"
 #include "scope_guard.hpp"
 #include "utils.hpp"
@@ -13,19 +12,14 @@
 using namespace web::http;
 using namespace web::http::client;
 
-StreamLoader::StreamLoader(size_t block_size, size_t buffer_size) :
-        buffer_(block_size), buffer_size_(buffer_size), block_size_(block_size),
-        has_response_received_(false), has_reached_eof_(false), request_failed_(false) {
-    ostream_ = buffer_.create_ostream();
-    istream_ = buffer_.create_istream();
-    Log::InfoF("StreamLoader(): producer_consumer_buffer: buffer_size() = %zu, size() = %zu", buffer_.buffer_size(), buffer_.size());
-
-}
+StreamLoader::StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count) :
+        chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count),
+        has_response_received_(false), has_reached_eof_(false), request_failed_(false) { }
 
 StreamLoader::~StreamLoader() {
-    ostream_.close();
-    istream_.close();
-    buffer_.close();
+    if (has_response_received_ && !has_reached_eof_ && !cancel_token_source_.get_token().is_canceled()) {
+        Abort();
+    }
 }
 
 bool StreamLoader::Open(const std::string &base_url, const std::string &path_query, std::optional<BasicAuth> basic_auth) {
@@ -42,7 +36,7 @@ bool StreamLoader::Open(const std::string &base_url, const std::string &path_que
     .then([this](const http_response& response) {
         ON_SCOPE_EXIT {
             // Acquire mutex for WaitForResponse()
-            std::lock_guard<std::mutex> lock(response_mutex_);
+            std::lock_guard lock(response_mutex_);
             has_response_received_ = true;
             // Notify WaitForResponse()
             response_cv_.notify_all();
@@ -57,10 +51,9 @@ bool StreamLoader::Open(const std::string &base_url, const std::string &path_que
         if (response.status_code() == status_codes::OK) {
             pplx::streams::istream body_stream = response.body();
             if (body_stream.is_valid()) {
-                Log::InfoF("Open(): producer_consumer_buffer: buffer_size() = %zu, size() = %zu", buffer_.buffer_size(), buffer_.size());
-                return Pump(body_stream, block_size_);
+                return Pump(body_stream, chunk_size_);
             } else {
-                Log::ErrorF(LOG_FILE_MESSAGE("Invalid body_stream"));
+                Log::ErrorF(LOG_FILE_MESSAGE("StreamLoader::Open(): Invalid body_stream"));
                 request_failed_ = true;
             }
         } else {
@@ -75,7 +68,7 @@ bool StreamLoader::Open(const std::string &base_url, const std::string &path_que
 }
 
 bool StreamLoader::WaitForResponse() {
-    std::unique_lock<std::mutex> lock(response_mutex_);
+    std::unique_lock lock(response_mutex_);
     if (has_response_received_ && !request_failed_) {
         return true;
     }
@@ -88,36 +81,49 @@ bool StreamLoader::WaitForResponse() {
     return !request_failed_;
 }
 
+bool StreamLoader::WaitForData() {
+    if (request_failed_) {
+        return false;
+    }
+
+    blocking_buffer_.WaitUntilData();
+
+    return !request_failed_;
+}
+
 pplx::task<void> StreamLoader::Pump(pplx::streams::istream body_stream, size_t chunk_size) {
-    Log::InfoF("Pump(): chunk_size = %zu", chunk_size);
     if (cancel_token_source_.get_token().is_canceled()) {
         return pplx::create_task([] {});
     }
 
     StreamLoader* self = this;
 
-    pplx::task<void> task = body_stream.read(ostream_.streambuf(), chunk_size)
-    .then([=](const pplx::task<size_t>& previous_task) {
-        if (self->cancel_token_source_.get_token().is_canceled()) {
+    pplx::task<void> task = pplx::create_task([=] {
+        pplx::streams::container_buffer<std::vector<uint8_t>> container_buf;
+        pplx::task<size_t> read_task = body_stream.read(container_buf, chunk_size);
+
+        size_t bytes_read = 0;
+
+        try {
+            bytes_read = read_task.get();
+        } catch (const std::exception& ex) {
+            Log::ErrorF(LOG_FILE_MESSAGE(ex.what()));
             return pplx::create_task([] {});
         }
 
-        size_t bytes_read = 0;
-        try {
-            bytes_read = previous_task.get();
-        } catch (const std::exception& ex) {
-            Log::ErrorF(LOG_FILE_MESSAGE(ex.what()));
-        }
+        // Log::InfoF("Pump(): chunk_size = %zu, bytes_read = %zu", chunk_size, bytes_read);
 
-        Log::InfoF("Pump(): bytes_read = %zu, buffer_size() = %zu, size() = %zu", bytes_read, buffer_.buffer_size(), buffer_.size());
-
-        if (bytes_read > 0) {
-            return Pump(body_stream, chunk_size);
-        } else {
-            // bytes_read == 0, EOF
+        if (body_stream.is_eof() || bytes_read == 0) {
             Log::InfoF(LOG_FILE_MESSAGE("bytes_read = 0 (EOF), pulling completed"));
             self->has_reached_eof_ = true;
-            return self->ostream_.close();
+
+            return pplx::create_task([] {});
+        } else {
+            // TODO: Write to blocking_buffer_
+            auto& vec = container_buf.collection();
+            blocking_buffer_.WriteChunk(std::move(vec));
+
+            return Pump(body_stream, chunk_size);
         }
     });
 
@@ -126,21 +132,19 @@ pplx::task<void> StreamLoader::Pump(pplx::streams::istream body_stream, size_t c
 
 void StreamLoader::Abort() {
     cancel_token_source_.cancel();
+    blocking_buffer_.NotifyExit();
 }
 
 size_t StreamLoader::Read(uint8_t* buffer, size_t expected_bytes) {
-    Log::InfoF("Read(): before: expected_bytes = %zu, buffer_size() = %zu, size() = %zu", expected_bytes, buffer_.buffer_size(), buffer_.size());
-    concurrency::streams::container_buffer<std::vector<uint8_t>> container_buf;
+    // Log::InfoF("Read(): before: expected_bytes = %zu, readable = %zu", expected_bytes, blocking_buffer_.ReadableBytes());
 
-    size_t bytes_read = 0;
-    try {
-        bytes_read = istream_.read(container_buf, expected_bytes).get();
-    } catch (const std::exception& ex) {
-        Log::InfoF("StreamLoader::Read(): istream async read exception: %s", ex.what());
-    }
+    size_t bytes_read = blocking_buffer_.Read(buffer, expected_bytes);
 
-    Log::InfoF("Read(): after: bytes_read = %zu, buffer_size() = %zu, size() = %zu", buffer_.buffer_size(), buffer_.size());
-    memcpy(buffer, container_buf.collection().data(), bytes_read);
+    // Log::InfoF("Read(): after: bytes_read = %zu, readable = %zu", bytes_read, blocking_buffer_.ReadableBytes());
 
     return bytes_read;
+}
+
+size_t StreamLoader::RemainReadable() {
+    return blocking_buffer_.ReadableBytes();
 }
