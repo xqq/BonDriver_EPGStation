@@ -18,16 +18,33 @@ option(BONDRIVER_EPGSTATION_BUILD_TEST "Build test program." ${MAIN_PROJECT})
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(YAML_CPP_BUILD_TOOLS OFF)
-set(YAML_MSVC_SHARED_RT OFF)
-
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 endif()
 
+
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "Disable yaml-cpp contrib")
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "Disable yaml-cpp build tools")
+set(YAML_MSVC_SHARED_RT OFF CACHE BOOL "Use static linked runtime for yaml-cpp")
+
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build cpr as static library")
+set(BUILD_CPR_TESTS OFF CACHE BOOL "Disable cpr tests building")
+
+if(WIN32)
+    set(USE_OPENSSL OFF)
+    set(USE_WINSSL ON)
+endif()
+
+find_package(CURL)
+if(CURL_FOUND)
+    set(USE_SYSTEM_CURL ON CACHE BOOL "Use the system curl for faster builds")
+endif()
+
+
 find_package(cpprestsdk REQUIRED)
 
 #add_subdirectory(thirdparty/cpprestsdk)
+add_subdirectory(thirdparty/cpr)
 add_subdirectory(thirdparty/json)
 add_subdirectory(thirdparty/yaml-cpp)
 
@@ -115,6 +132,8 @@ target_compile_definitions(BonDriver_EPGStation
 # Include directories
 target_include_directories(BonDriver_EPGStation
     PRIVATE
+        ${CPR_INCLUDE_DIRS}
+        ${JSON_INCLUDE_DIRS}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -128,7 +147,7 @@ target_include_directories(BonDriver_EPGStation
 target_link_libraries(BonDriver_EPGStation
     PRIVATE
         cpprestsdk::cpprest
-        #cpprest
+        ${CPR_LIBRARIES}
         nlohmann_json::nlohmann_json
         yaml-cpp
 )
