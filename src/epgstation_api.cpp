@@ -25,15 +25,14 @@ bool EPGStationAPI::SetBasicAuth(const std::string& user, const std::string& pas
 }
 
 std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
-    cpr::Url url{this->base_url_ + kEPGStationAPIConfig};
-    cpr::Response response;
+    cpr::Session session;
+    session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPIConfig});
 
-    if (!has_basic_auth_) {
-        response = cpr::Get(url);
-    } else {
-        cpr::Authentication auth{ basicauth_user_, basicauth_password_ };
-        response = cpr::Get(url, auth);
+    if (has_basic_auth_) {
+        session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
     }
+
+    cpr::Response response = session.Get();
 
     if (response.error) {
         Log::ErrorF("curl failed for %s: error_code = %d, msg = %s", kEPGStationAPIConfig, response.error.code, response.error.message.c_str());
@@ -50,15 +49,14 @@ std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
 }
 
 std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
-    cpr::Url url{this->base_url_ + kEPGStationAPIChannels};
-    cpr::Response response;
+    cpr::Session session;
+    session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPIChannels});
 
-    if (!has_basic_auth_) {
-        response = cpr::Get(url);
-    } else {
-        cpr::Authentication auth{ basicauth_user_, basicauth_password_ };
-        response = cpr::Get(url, auth);
+    if (has_basic_auth_) {
+        session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
     }
+
+    cpr::Response response = session.Get();
 
     if (response.error) {
         Log::ErrorF("curl failed for %s: error_code = %d, msg = %s", kEPGStationAPIChannels, response.error.code, response.error.message.c_str());
