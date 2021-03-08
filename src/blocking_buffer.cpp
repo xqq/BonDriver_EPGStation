@@ -83,6 +83,7 @@ size_t BlockingBuffer::Write(const uint8_t *buffer, size_t bytes) {
     std::unique_lock locker(mutex_);
 
     if (has_chunk_count_limit_ && deque_.size() >= max_chunk_count_) {
+        consume_cv_.notify_one();
         // producer standby, waiting notify message from the consumer
         produce_cv_.wait(locker, [this] {
             return deque_.size() < max_chunk_count_ || is_exit_;
@@ -95,6 +96,7 @@ size_t BlockingBuffer::Write(const uint8_t *buffer, size_t bytes) {
 
     while (remain_unwrite > 0) {
         if (deque_.size() >= max_chunk_count_) {
+            consume_cv_.notify_one();
             // Wait for consuming
             produce_cv_.wait(locker, [this] {
                 return deque_.size() < max_chunk_count_ || is_exit_;
@@ -128,6 +130,7 @@ size_t BlockingBuffer::WriteChunk(const std::vector<uint8_t>& vec) {
     std::unique_lock locker(mutex_);
 
     if (has_chunk_count_limit_ && deque_.size() >= max_chunk_count_) {
+        consume_cv_.notify_one();
         // producer standby, waiting notify message from the consumer
         produce_cv_.wait(locker, [this] {
             return deque_.size() < max_chunk_count_ || is_exit_;
@@ -150,6 +153,7 @@ size_t BlockingBuffer::WriteChunk(std::vector<uint8_t>&& vec) {
     std::unique_lock locker(mutex_);
 
     if (has_chunk_count_limit_ && deque_.size() >= max_chunk_count_) {
+        consume_cv_.notify_one();
         // producer standby, waiting notify message from the consumer
         produce_cv_.wait(locker, [this] {
             return deque_.size() < max_chunk_count_ || is_exit_;
