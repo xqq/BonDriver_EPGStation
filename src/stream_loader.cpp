@@ -3,65 +3,64 @@
 //
 
 #include <vector>
-#include <cpprest/http_client.h>
+#include <future>
+#include <functional>
+#include <cpr/cpr.h>
 #include "log.hpp"
 #include "scope_guard.hpp"
 #include "utils.hpp"
 #include "stream_loader.hpp"
 
-using namespace web::http;
-using namespace web::http::client;
+using namespace std::placeholders;
 
 StreamLoader::StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count) :
-        chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count),
-        has_response_received_(false), has_reached_eof_(false), request_failed_(false) { }
+        chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count) {}
 
 StreamLoader::~StreamLoader() {
-    if (has_response_received_ && !has_reached_eof_ && !cancel_token_source_.get_token().is_canceled()) {
+    if (has_response_received_ && !has_reached_eof_ && !has_requested_abort_) {
         Abort();
     }
 }
 
-bool StreamLoader::Open(const std::string &base_url, const std::string &path_query, std::optional<BasicAuth> basic_auth) {
-    http_client_config client_config;
+bool StreamLoader::Open(const std::string& base_url, const std::string& path_query, std::optional<BasicAuth> basic_auth) {
+    session_.SetUrl(cpr::Url{base_url + path_query});
 
-    if (basic_auth.has_value()) {
-        web::credentials credentials(UTF8ToPlatformString(basic_auth->user), UTF8ToPlatformString(basic_auth->password));
-        client_config.set_credentials(credentials);
+    if (basic_auth) {
+        session_.SetAuth(cpr::Authentication{basic_auth->user, basic_auth->password});
     }
 
-    http_client client(UTF8ToPlatformString(base_url), client_config);
+    session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
+    session_.SetWriteCallback(cpr::WriteCallback(std::bind(&StreamLoader::OnWriteCallback, this, _1)));
 
-    client.request(methods::GET, UTF8ToPlatformString(path_query), cancel_token_source_.get_token())
-    .then([this](const http_response& response) {
-        ON_SCOPE_EXIT {
-            // Acquire mutex for WaitForResponse()
+    async_response_ = std::async(std::launch::async, [this] {
+        cpr::Response response = session_.Get();
+        bool has_error = false;
+
+        if (response.error && response.error.code != cpr::ErrorCode::REQUEST_CANCELLED) {
+            has_error = true;
+            Log::ErrorF("StreamLoader::Open(): curl failed with error_code: %d, msg = %s",
+                        response.error.code,
+                        response.error.message.c_str());
+        } else if (response.status_code >= 400) {
+            has_error = true;
+            Log::ErrorF("StreamLoader::Open(): Invalid status code: %d, body = %s",
+                        response.status_code,
+                        response.text.c_str());
+        }
+
+        if (has_error) {
             std::lock_guard lock(response_mutex_);
             has_response_received_ = true;
-            // Notify WaitForResponse()
-            response_cv_.notify_all();
-        };
-
-        // If cancelled, return empty task
-        if (cancel_token_source_.get_token().is_canceled()) {
-            return pplx::create_task([] {});
-        }
-
-        // status_code == 200, OK
-        if (response.status_code() == status_codes::OK) {
-            pplx::streams::istream body_stream = response.body();
-            if (body_stream.is_valid()) {
-                return Pump(body_stream, chunk_size_);
-            } else {
-                Log::ErrorF(LOG_FILE_MESSAGE("StreamLoader::Open(): Invalid body_stream"));
-                request_failed_ = true;
-            }
-        } else {
-            Log::ErrorF("StreamLoader::Open(): Invalid status code: %d", response.status_code());
             request_failed_ = true;
+            response_cv_.notify_all();
         }
 
-        return pplx::create_task([] {});
+        if (!has_error && !has_requested_abort_) {
+            Log::InfoF(LOG_FILE_MESSAGE("curl_easy_perform returned, pulling completed"));
+            has_reached_eof_ = true;
+        }
+
+        return response;
     });
 
     return true;
@@ -91,57 +90,60 @@ bool StreamLoader::WaitForData() {
     return !request_failed_;
 }
 
-pplx::task<void> StreamLoader::Pump(pplx::streams::istream body_stream, size_t chunk_size) {
-    if (cancel_token_source_.get_token().is_canceled()) {
-        return pplx::create_task([] {});
+bool StreamLoader::OnHeaderCallback(std::string data) {
+    if (has_requested_abort_) {
+        // return false to cancel the transfer
+        return false;
     }
 
-    StreamLoader* self = this;
+    if (has_response_received_) {
+        // status_code received, ignore subsequent callback
+        return true;
+    }
 
-    pplx::task<void> task = pplx::create_task([=] {
-        pplx::streams::container_buffer<std::vector<uint8_t>> container_buf;
-        pplx::task<size_t> read_task = body_stream.read(container_buf, chunk_size);
+    ON_SCOPE_EXIT{
+        // Acquire mutex for WaitForResponse()
+        std::lock_guard lock(response_mutex_);
+        has_response_received_ = true;
+        // Notify WaitForResponse()
+        response_cv_.notify_all();
+    };
 
-        size_t bytes_read = 0;
+    auto holder = session_.GetCurlHolder();
+    CURL* curl = holder->handle;
 
-        try {
-            bytes_read = read_task.get();
-        } catch (const std::exception& ex) {
-            Log::ErrorF(LOG_FILE_MESSAGE(ex.what()));
-            return pplx::create_task([] {});
-        }
+    long status_code = 0;
+    CURLcode ret = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
 
-        // Log::InfoF("Pump(): chunk_size = %zu, bytes_read = %zu", chunk_size, bytes_read);
+    // 40x error, set request_failed_ to false and cancel transfer
+    if (ret == CURLE_OK && status_code >= 400) {
+        Log::ErrorF("StreamLoader::OnHeaderCallback(): Invalid status code: %d", status_code);
+        request_failed_ = true;
+        return false;
+    }
 
-        if (body_stream.is_eof() || bytes_read == 0) {
-            Log::InfoF(LOG_FILE_MESSAGE("bytes_read = 0 (EOF), pulling completed"));
-            self->has_reached_eof_ = true;
+    // 20x OK, notify WaitForResponse and continue transfer
+    return true;
+}
 
-            return pplx::create_task([] {});
-        } else {
-            // TODO: Write to blocking_buffer_
-            auto& vec = container_buf.collection();
-            blocking_buffer_.WriteChunk(std::move(vec));
+bool StreamLoader::OnWriteCallback(std::string data) {
+    if (has_requested_abort_) {
+        // return false to cancel the transfer
+        return false;
+    }
 
-            return Pump(body_stream, chunk_size);
-        }
-    });
-
-    return task;
+    blocking_buffer_.Write(reinterpret_cast<uint8_t*>(data.data()), data.size());
+    return true;
 }
 
 void StreamLoader::Abort() {
-    cancel_token_source_.cancel();
+    has_requested_abort_ = true;
     blocking_buffer_.NotifyExit();
+    async_response_.wait();
 }
 
 size_t StreamLoader::Read(uint8_t* buffer, size_t expected_bytes) {
-    // Log::InfoF("Read(): before: expected_bytes = %zu, readable = %zu", expected_bytes, blocking_buffer_.ReadableBytes());
-
     size_t bytes_read = blocking_buffer_.Read(buffer, expected_bytes);
-
-    // Log::InfoF("Read(): after: bytes_read = %zu, readable = %zu", bytes_read, blocking_buffer_.ReadableBytes());
-
     return bytes_read;
 }
 

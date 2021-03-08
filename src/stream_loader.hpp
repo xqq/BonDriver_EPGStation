@@ -9,10 +9,12 @@
 #include <cstddef>
 #include <string>
 #include <optional>
+#include <future>
+#include <cpr/response.h>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <cpprest/http_client.h>
+#include <cpr/cpr.h>
 #include "blocking_buffer.hpp"
 #include "config.hpp"
 
@@ -27,19 +29,23 @@ public:
     size_t Read(uint8_t* buffer, size_t expected_bytes);
     size_t RemainReadable();
 private:
-    pplx::task<void> Pump(pplx::streams::istream body_stream, size_t chunk_size);
+    bool OnHeaderCallback(std::string data);
+    bool OnWriteCallback(std::string data);
 private:
     size_t chunk_size_;
     BlockingBuffer blocking_buffer_;
 
-    bool has_response_received_;
-    bool has_reached_eof_;
-    bool request_failed_;
+    bool has_response_received_ = false;
+    bool has_reached_eof_ = false;
+    bool request_failed_ = false;
+    std::atomic<bool> has_requested_abort_;
+
+    cpr::Session session_;
+
+    std::future<cpr::Response> async_response_;
 
     std::mutex response_mutex_;
     std::condition_variable response_cv_;
-
-    pplx::cancellation_token_source cancel_token_source_;
 };
 
 
