@@ -4,9 +4,6 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
-[submodule "thirdparty/cpprestsdk"]
-	path = thirdparty/cpprestsdk
-	url = https://github.com/microsoft/cpprestsdk.git
 [submodule "thirdparty/cpr"]
 	path = thirdparty/cpr
 	url = https://github.com/whoshuu/cpr.git
