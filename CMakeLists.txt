@@ -41,9 +41,6 @@ if(CURL_FOUND)
 endif()
 
 
-find_package(cpprestsdk REQUIRED)
-
-#add_subdirectory(thirdparty/cpprestsdk)
 add_subdirectory(thirdparty/cpr)
 add_subdirectory(thirdparty/json)
 add_subdirectory(thirdparty/yaml-cpp)
@@ -146,7 +143,6 @@ target_include_directories(BonDriver_EPGStation
 # Linking
 target_link_libraries(BonDriver_EPGStation
     PRIVATE
-        cpprestsdk::cpprest
         ${CPR_LIBRARIES}
         nlohmann_json::nlohmann_json
         yaml-cpp
