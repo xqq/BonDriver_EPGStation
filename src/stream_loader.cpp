@@ -101,7 +101,7 @@ bool StreamLoader::OnHeaderCallback(std::string data) {
         return true;
     }
 
-    ON_SCOPE_EXIT{
+    ON_SCOPE_EXIT {
         // Acquire mutex for WaitForResponse()
         std::lock_guard lock(response_mutex_);
         has_response_received_ = true;
