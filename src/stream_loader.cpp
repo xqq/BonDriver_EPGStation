@@ -26,6 +26,8 @@ StreamLoader::~StreamLoader() {
 
 bool StreamLoader::Open(const std::string& base_url, const std::string& path_query, std::optional<BasicAuth> basic_auth) {
     std::string url = base_url + path_query;
+    Log::InfoF("StreamLoader::Open(): Opening %s", url.c_str());
+
     session_.SetUrl(cpr::Url{url});
 
     if (basic_auth) {
@@ -34,8 +36,6 @@ bool StreamLoader::Open(const std::string& base_url, const std::string& path_que
 
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
     session_.SetWriteCallback(cpr::WriteCallback(std::bind(&StreamLoader::OnWriteCallback, this, _1)));
-
-    Log::InfoF("StreamLoader::Open(): Opening %s", url.c_str());
 
     async_response_ = std::async(std::launch::async, [this] {
         cpr::Response response = session_.Get();
@@ -146,6 +146,7 @@ bool StreamLoader::OnWriteCallback(std::string data) {
 }
 
 void StreamLoader::Abort() {
+    Log::InfoF("StreamLoader::Abort(): Aborting");
     has_requested_abort_ = true;
     blocking_buffer_.NotifyExit();
     async_response_.wait();
