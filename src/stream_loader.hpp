@@ -38,7 +38,7 @@ private:
     bool has_response_received_ = false;
     bool has_reached_eof_ = false;
     bool request_failed_ = false;
-    std::atomic<bool> has_requested_abort_;
+    std::atomic<bool> has_requested_abort_ = false;
 
     cpr::Session session_;
 

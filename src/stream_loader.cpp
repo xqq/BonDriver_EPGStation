@@ -23,7 +23,8 @@ StreamLoader::~StreamLoader() {
 }
 
 bool StreamLoader::Open(const std::string& base_url, const std::string& path_query, std::optional<BasicAuth> basic_auth) {
-    session_.SetUrl(cpr::Url{base_url + path_query});
+    std::string url = base_url + path_query;
+    session_.SetUrl(cpr::Url{url});
 
     if (basic_auth) {
         session_.SetAuth(cpr::Authentication{basic_auth->user, basic_auth->password});
@@ -31,6 +32,8 @@ bool StreamLoader::Open(const std::string& base_url, const std::string& path_que
 
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
     session_.SetWriteCallback(cpr::WriteCallback(std::bind(&StreamLoader::OnWriteCallback, this, _1)));
+
+    Log::InfoF("StreamLoader::Open(): Opening %s", url.c_str());
 
     async_response_ = std::async(std::launch::async, [this] {
         cpr::Response response = session_.Get();
@@ -122,6 +125,7 @@ bool StreamLoader::OnHeaderCallback(std::string data) {
         return false;
     }
 
+    Log::InfoF("StreamLoader::OnHeaderCallback(): Received response with status code: %d", status_code);
     // 20x OK, notify WaitForResponse and continue transfer
     return true;
 }
