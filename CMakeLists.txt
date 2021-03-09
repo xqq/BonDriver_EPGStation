@@ -30,9 +30,12 @@ set(YAML_MSVC_SHARED_RT OFF CACHE BOOL "Use static linked runtime for yaml-cpp")
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build cpr as static library")
 set(BUILD_CPR_TESTS OFF CACHE BOOL "Disable cpr tests building")
 
+set(CURL_STATICLIB true)
+
 if(WIN32)
     set(USE_OPENSSL OFF)
     set(USE_WINSSL ON)
+    add_definitions(-DCURL_STATICLIB)
 endif()
 
 find_package(CURL)
