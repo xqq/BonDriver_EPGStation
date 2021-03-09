@@ -75,7 +75,7 @@ float SpeedSampler::LastSecondKBps() {
 
 float SpeedSampler::AverageKBps() {
     double elapsed_seconds = (GetCurrentClock() - first_checkpoint_) / 1000.0f;
-    return (total_bytes_ / elapsed_seconds) / 1024.0f;
+    return static_cast<float>((total_bytes_ / elapsed_seconds) / 1024.0f);
 }
 
 time_t SpeedSampler::GetCurrentClock() {
