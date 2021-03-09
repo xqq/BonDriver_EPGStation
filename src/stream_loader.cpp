@@ -2,7 +2,7 @@
 // @author magicxqq <xqq@xqq.im>
 //
 
-#include <vector>
+#include <cassert>
 #include <future>
 #include <functional>
 #include <cpr/cpr.h>
@@ -14,7 +14,9 @@
 using namespace std::placeholders;
 
 StreamLoader::StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count) :
-        chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count) {}
+        chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count) {
+    assert(!has_reached_eof_ && !has_requested_abort_ && "Stopped or aborted StreamLoader cannot be reused!");
+}
 
 StreamLoader::~StreamLoader() {
     if (has_response_received_ && !has_reached_eof_ && !has_requested_abort_) {
@@ -136,7 +138,10 @@ bool StreamLoader::OnWriteCallback(std::string data) {
         return false;
     }
 
+    speed_sampler_.AddBytes(data.size());
+
     blocking_buffer_.Write(reinterpret_cast<uint8_t*>(data.data()), data.size());
+
     return true;
 }
 
@@ -153,4 +158,8 @@ size_t StreamLoader::Read(uint8_t* buffer, size_t expected_bytes) {
 
 size_t StreamLoader::RemainReadable() {
     return blocking_buffer_.ReadableBytes();
+}
+
+float StreamLoader::GetCurrentSpeedKByte() {
+    return speed_sampler_.LastSecondKBps();
 }

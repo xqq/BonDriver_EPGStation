@@ -10,13 +10,14 @@
 #include <string>
 #include <optional>
 #include <future>
-#include <cpr/response.h>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include <cpr/cpr.h>
+#include <cpr/response.h>
+#include <cpr/session.h>
 #include "blocking_buffer.hpp"
 #include "config.hpp"
+#include "speed_sampler.hpp"
 
 class StreamLoader {
 public:
@@ -28,6 +29,7 @@ public:
     bool WaitForData();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
     size_t RemainReadable();
+    float GetCurrentSpeedKByte();
 private:
     bool OnHeaderCallback(std::string data);
     bool OnWriteCallback(std::string data);
@@ -40,8 +42,9 @@ private:
     bool request_failed_ = false;
     std::atomic<bool> has_requested_abort_ = false;
 
-    cpr::Session session_;
+    SpeedSampler speed_sampler_;
 
+    cpr::Session session_;
     std::future<cpr::Response> async_response_;
 
     std::mutex response_mutex_;
