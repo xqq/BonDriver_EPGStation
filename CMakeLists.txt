@@ -70,6 +70,8 @@ add_library(BonDriver_EPGStation
         src/log.hpp
         src/noncopyable.hpp
         src/scope_guard.hpp
+        src/speed_sampler.cpp
+        src/speed_sampler.hpp
         src/stream_loader.cpp
         src/stream_loader.hpp
         src/utils.cpp
