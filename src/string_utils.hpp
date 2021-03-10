@@ -2,8 +2,8 @@
 // @author magicxqq <xqq@xqq.im>
 //
 
-#ifndef BONDRIVER_EPGSTATION_UTILS_HPP
-#define BONDRIVER_EPGSTATION_UTILS_HPP
+#ifndef BONDRIVER_EPGSTATION_STRING_UTILS_HPP
+#define BONDRIVER_EPGSTATION_STRING_UTILS_HPP
 
 #include <string>
 
@@ -14,14 +14,14 @@
 #endif
 
 #if defined(_WIN32) && defined(_UNICODE)
-    #define UTF8ToPlatformString(a) Utils::UTF8ToWideString(a)
-    #define PlatformStringToUTF8(a) Utils::WideStringToUTF8(a)
+    #define UTF8ToPlatformString(a) StringUtils::UTF8ToWideString(a)
+    #define PlatformStringToUTF8(a) StringUtils::WideStringToUTF8(a)
 #else
     #define UTF8ToPlatformString(a) a
     #define PlatformStringToUTF8(a) a
 #endif
 
-namespace Utils {
+namespace StringUtils {
 
 std::wstring UTF8ToWideString(const char* input);
 std::wstring UTF8ToWideString(const std::string& input);
@@ -32,4 +32,4 @@ std::string RemoveSuffixSlash(const std::string& input);
 
 }
 
-#endif // BONDRIVER_EPGSTATION_UTILS_HPP
+#endif // BONDRIVER_EPGSTATION_STRING_UTILS_HPP

@@ -4,7 +4,7 @@
 
 #include <yaml-cpp/yaml.h>
 #include "log.hpp"
-#include "utils.hpp"
+#include "string_utils.hpp"
 #include "config.hpp"
 
 Config::Config() : is_loaded_(false) { }
@@ -15,7 +15,7 @@ bool Config::LoadYamlFile(const std::string& filename) {
 
         if (config["baseURL"]) {
             std::string base_url = config["baseURL"].as<std::string>();
-            base_url_ = Utils::RemoveSuffixSlash(base_url);
+            base_url_ = StringUtils::RemoveSuffixSlash(base_url);
         } else {
             Log::ErrorF("Missing baseURL field in config file");
             return false;

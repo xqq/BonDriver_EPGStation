@@ -4,9 +4,9 @@
 
 #include <Windows.h>
 #include <cstddef>
-#include "utils.hpp"
+#include "string_utils.hpp"
 
-namespace Utils {
+namespace StringUtils {
 
 std::wstring UTF8ToWideString(const char* input) {
     int length = MultiByteToWideChar(CP_UTF8, 0, input, -1, nullptr, 0);

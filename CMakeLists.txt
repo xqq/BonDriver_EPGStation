@@ -74,8 +74,8 @@ add_library(BonDriver_EPGStation
         src/speed_sampler.hpp
         src/stream_loader.cpp
         src/stream_loader.hpp
-        src/utils.cpp
-        src/utils.hpp
+        src/string_utils.cpp
+        src/string_utils.hpp
 )
 
 # Remove "lib" prefix for dll filename

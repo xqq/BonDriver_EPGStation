@@ -8,7 +8,7 @@
 #include <cpr/cpr.h>
 #include "log.hpp"
 #include "scope_guard.hpp"
-#include "utils.hpp"
+#include "string_utils.hpp"
 #include "stream_loader.hpp"
 
 using namespace std::placeholders;

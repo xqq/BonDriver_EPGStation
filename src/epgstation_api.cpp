@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #include "epgstation_models_deserialize.hpp"
 #include "log.hpp"
-#include "utils.hpp"
+#include "string_utils.hpp"
 #include "epgstation_api.hpp"
 
 using json = nlohmann::json;
