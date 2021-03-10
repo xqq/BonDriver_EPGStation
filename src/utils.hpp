@@ -7,7 +7,13 @@
 
 #include <string>
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(_UNICODE)
+    using PlatformString = std::basic_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t>>;
+#else
+    using PlatformString = std::basic_string<char, std::char_traits<char>, std::allocator<char>>;
+#endif
+
+#if defined(_WIN32) && defined(_UNICODE)
     #define UTF8ToPlatformString(a) Utils::UTF8ToWideString(a)
     #define PlatformStringToUTF8(a) Utils::WideStringToUTF8(a)
 #else
