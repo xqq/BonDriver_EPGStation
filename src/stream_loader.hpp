@@ -29,6 +29,7 @@ public:
     bool WaitForData();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
     size_t RemainReadable();
+    bool IsPolling();
     float GetCurrentSpeedKByte();
 private:
     bool OnHeaderCallback(std::string data);
@@ -37,6 +38,7 @@ private:
     size_t chunk_size_;
     BlockingBuffer blocking_buffer_;
 
+    bool has_requested_ = false;
     bool has_response_received_ = false;
     bool has_reached_eof_ = false;
     bool request_failed_ = false;

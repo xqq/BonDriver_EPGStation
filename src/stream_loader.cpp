@@ -15,11 +15,11 @@ using namespace std::placeholders;
 
 StreamLoader::StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count) :
         chunk_size_(chunk_size), blocking_buffer_(chunk_size, max_chunk_count, min_chunk_count) {
-    assert(!has_reached_eof_ && !has_requested_abort_ && "Stopped or aborted StreamLoader cannot be reused!");
+    assert(!has_requested_ && "Once requested StreamLoader cannot be reused!");
 }
 
 StreamLoader::~StreamLoader() {
-    if (has_response_received_ && !has_reached_eof_ && !has_requested_abort_) {
+    if (IsPolling()) {
         Abort();
     }
 }
@@ -36,6 +36,8 @@ bool StreamLoader::Open(const std::string& base_url, const std::string& path_que
 
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
     session_.SetWriteCallback(cpr::WriteCallback(std::bind(&StreamLoader::OnWriteCallback, this, _1)));
+
+    has_requested_ = true;
 
     async_response_ = std::async(std::launch::async, [this] {
         cpr::Response response = session_.Get();
@@ -159,6 +161,10 @@ size_t StreamLoader::Read(uint8_t* buffer, size_t expected_bytes) {
 
 size_t StreamLoader::RemainReadable() {
     return blocking_buffer_.ReadableBytes();
+}
+
+bool StreamLoader::IsPolling() {
+    return has_requested_ && !request_failed_ && !has_reached_eof_ && !has_requested_abort_;
 }
 
 float StreamLoader::GetCurrentSpeedKByte() {
