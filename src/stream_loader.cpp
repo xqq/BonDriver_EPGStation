@@ -159,6 +159,10 @@ size_t StreamLoader::Read(uint8_t* buffer, size_t expected_bytes) {
     return bytes_read;
 }
 
+std::pair<uint8_t*, size_t> StreamLoader::ReadChunkAndRetain() {
+    return blocking_buffer_.ReadChunkAndRetain();
+}
+
 size_t StreamLoader::RemainReadable() {
     return blocking_buffer_.ReadableBytes();
 }

@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <optional>
 #include <future>
 #include <atomic>
@@ -28,6 +29,7 @@ public:
     bool WaitForResponse();
     bool WaitForData();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
+    std::pair<uint8_t*, size_t> ReadChunkAndRetain();
     size_t RemainReadable();
     bool IsPolling();
     float GetCurrentSpeedKByte();
