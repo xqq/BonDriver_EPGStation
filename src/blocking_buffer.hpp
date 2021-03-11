@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 #include <deque>
 #include <vector>
 #include <mutex>
@@ -21,6 +22,7 @@ public:
     BlockingBuffer(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count);
     ~BlockingBuffer();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
+    std::pair<uint8_t*, size_t> ReadChunkAndRetain();
     size_t Write(const uint8_t* buffer, size_t bytes);
     size_t WriteChunk(const std::vector<uint8_t>& vec);
     size_t WriteChunk(std::vector<uint8_t>&& vec);
@@ -31,7 +33,7 @@ public:
     size_t ReadableBytes();
     void Clear();
 private:
-    class Chunk {
+    struct Chunk {
     public:
         explicit Chunk(size_t chunk_size);
         explicit Chunk(std::vector<uint8_t>&& vec);
@@ -43,6 +45,7 @@ private:
         size_t RemainWritable() const;
     private:
         size_t chunk_size_;
+    public:
         ptrdiff_t read_pos_;
         ptrdiff_t write_pos_;
         std::vector<uint8_t> vec_;

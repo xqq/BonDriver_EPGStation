@@ -33,6 +33,7 @@ size_t BlockingBuffer::Read(uint8_t* buffer, size_t expected_bytes) {
     std::unique_lock locker(mutex_);
 
     if (has_chunk_count_limit_ && deque_.size() < min_chunk_count_) {
+        produce_cv_.notify_one();
         // consumer standby, waiting notify message from the producer
         consume_cv_.wait(locker, [this] {
             return deque_.size() >= min_chunk_count_ || is_exit_;
@@ -45,6 +46,7 @@ size_t BlockingBuffer::Read(uint8_t* buffer, size_t expected_bytes) {
 
     while (remain_unread > 0) {
         if (deque_.empty() && !is_exit_) {
+            produce_cv_.notify_one();
             // Wait for producing
             consume_cv_.wait(locker, [this] {
                 return !deque_.empty() || is_exit_;
@@ -56,6 +58,11 @@ size_t BlockingBuffer::Read(uint8_t* buffer, size_t expected_bytes) {
         }
 
         auto& front_chunk = deque_.front();
+
+        if (front_chunk.RemainReadable() == 0) {
+            deque_.pop_front();
+            continue;
+        }
 
         size_t request_bytes = std::min(static_cast<size_t>(remain_unread), front_chunk.RemainReadable());
         size_t chunk_read = front_chunk.Read(out, request_bytes);
@@ -72,6 +79,53 @@ size_t BlockingBuffer::Read(uint8_t* buffer, size_t expected_bytes) {
     // Notify the data producer to produce data
     produce_cv_.notify_one();
     return bytes_read;
+}
+
+std::pair<uint8_t*, size_t> BlockingBuffer::ReadChunkAndRetain() {
+    // I am the data consumer
+    std::unique_lock locker(mutex_);
+
+    if (has_chunk_count_limit_ && deque_.size() < min_chunk_count_) {
+        produce_cv_.notify_one();
+        // consumer standby, waiting notify message from the producer
+        consume_cv_.wait(locker, [this] {
+            return deque_.size() >= min_chunk_count_ || is_exit_;
+        });
+    }
+
+    uint8_t* buffer_ptr = nullptr;
+    size_t bytes = 0;
+
+    while (!buffer_ptr) {
+        if (deque_.empty() && !is_exit_) {
+            produce_cv_.notify_one();
+            // Wait for producing
+            consume_cv_.wait(locker, [this] {
+                return !deque_.empty() || is_exit_;
+            });
+        }
+
+        if (deque_.empty() && is_exit_) {
+            break;
+        }
+
+        Chunk& front_chunk = deque_.front();
+
+        if (front_chunk.RemainReadable() == 0) {
+            deque_.pop_front();
+            continue;
+        }
+
+        buffer_ptr = front_chunk.vec_.data() + front_chunk.read_pos_;
+        bytes = front_chunk.RemainReadable();
+        // fast-forward read_pos_ to write_pos_ (mark as consumed)
+        front_chunk.read_pos_ = front_chunk.write_pos_;
+    }
+
+    // Notify the data producer to produce data
+    produce_cv_.notify_one();
+
+    return {buffer_ptr, bytes};
 }
 
 size_t BlockingBuffer::Write(const uint8_t *buffer, size_t bytes) {
