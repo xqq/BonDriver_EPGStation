@@ -28,12 +28,14 @@ public:
     [[nodiscard]] std::optional<EPGStationVersion> GetVersion() const;
     [[nodiscard]] std::optional<BasicAuth> GetBasicAuth() const;
     [[nodiscard]] std::optional<int> GetMpegTsStreamingMode() const;
+    [[nodiscard]] std::optional<bool> GetShowInactiveServices() const;
 private:
     bool is_loaded_;
     std::optional<std::string> base_url_;
     std::optional<EPGStationVersion> version_;
     std::optional<BasicAuth> basic_auth_;
     std::optional<int> mpegts_streaming_mode_;
+    std::optional<bool> show_inactive_services_;
 };
 
 #endif // BONDRIVER_EPGSTATION_CONFIG_HPP

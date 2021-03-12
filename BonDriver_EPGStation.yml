@@ -4,3 +4,4 @@ basicAuth:
   user: admin
   password: admin
 mpegTsStreamingMode: 0
+showInactiveServices: false

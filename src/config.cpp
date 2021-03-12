@@ -56,6 +56,10 @@ bool Config::LoadYamlFile(const std::string& filename) {
             Log::ErrorF("Missing mpegTsStreamingMode field in config file");
             return false;
         }
+
+        if (config["showInactiveServices"]) {
+            show_inactive_services_ = config["showInactiveServices"].as<bool>();
+        } // else: showInactiveServices is optional
     } catch (YAML::BadFile& ex) {
         Log::ErrorF("Load yaml file failed, %s", ex.what());
         return false;
@@ -86,4 +90,8 @@ std::optional<BasicAuth> Config::GetBasicAuth() const {
 
 std::optional<int> Config::GetMpegTsStreamingMode() const {
     return mpegts_streaming_mode_;
+}
+
+std::optional<bool> Config::GetShowInactiveServices() const {
+    return show_inactive_services_;
 }
