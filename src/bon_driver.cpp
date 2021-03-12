@@ -38,15 +38,29 @@ void BonDriver::InitChannels() {
     }
     epgstation_config_ = config.value();
 
-    std::optional<EPGStation::Channels> channels = api_.GetChannels();
-    if (!channels.has_value()) {
-        Log::ErrorF("EPGStationAPI::GetChannels() failed");
-        return;
-    }
-    channels_ = std::move(channels.value());
 
-    for (size_t i = 0; i < channels_.channels.size(); i++) {
-        auto& channel = channels_.channels[i];
+    auto show_inactive_services = yaml_config_.GetShowInactiveServices();
+
+    if (show_inactive_services.has_value() && show_inactive_services.value() == true) {
+        // showInactiveServices == true
+        std::optional<EPGStation::Channels> channels_holder = api_.GetChannels();
+        if (!channels_holder.has_value()) {
+            Log::ErrorF("EPGStationAPI::GetChannels() failed");
+            return;
+        }
+        channels_ = std::move(channels_holder->channels);
+    } else {
+        std::optional<EPGStation::Broadcasting> channels_holder = api_.GetBroadcasting();
+        if (!channels_holder.has_value()) {
+            Log::ErrorF("EPGStationAPI::GetBroadcasting() failed");
+            return;
+        }
+        channels_ = std::move(channels_holder->channels);
+    }
+
+
+    for (size_t i = 0; i < channels_.size(); i++) {
+        auto& channel = channels_[i];
 
         auto iter = space_set_.find(channel.channel_type);
         if (iter == space_set_.end()) {
@@ -66,7 +80,7 @@ const BOOL BonDriver::OpenTuner(void) {
         return FALSE;
     }
 
-    if (channels_.channels.empty()) {
+    if (channels_.empty()) {
         Log::ErrorF("Get channels failed or channel list is empty, OpenTuner() failed");
         return FALSE;
     }
@@ -107,11 +121,11 @@ const BOOL BonDriver::SetChannel(const DWORD dwSpace, const DWORD dwChannel) {
     }
 
     size_t channel_index = space_channel_bases_[dwSpace] + dwChannel;
-    if (channel_index >= channels_.channels.size()) {
+    if (channel_index >= channels_.size()) {
         return FALSE;
     }
 
-    EPGStation::Channel& channel = channels_.channels[channel_index];
+    EPGStation::Channel& channel = channels_[channel_index];
 
     if (stream_loader_) {
         CloseTuner();
@@ -144,6 +158,7 @@ const DWORD BonDriver::WaitTsStream(const DWORD dwTimeOut) {
 
     stream_loader_->WaitForResponse();
     stream_loader_->WaitForData();
+    // TODO: Return value
     return 0;
 }
 
@@ -229,11 +244,11 @@ LPCTSTR BonDriver::EnumChannelName(const DWORD dwSpace, const DWORD dwChannel) {
     }
 
     size_t channel_index = space_channel_bases_[dwSpace] + dwChannel;
-    if (channel_index >= channels_.channels.size()) {
+    if (channel_index >= channels_.size()) {
         return nullptr;
     }
 
-    EPGStation::Channel& channel = channels_.channels[channel_index];
+    EPGStation::Channel& channel = channels_[channel_index];
 
     static PlatformString name_buffer;
     name_buffer = UTF8ToPlatformString(channel.name);

@@ -47,7 +47,7 @@ private:
     EPGStationAPI api_;
 
     EPGStation::Config epgstation_config_;
-    EPGStation::Channels channels_;
+    std::vector<EPGStation::Channel> channels_;
 
     size_t chunk_size_ = 188 * 1024;
     std::unique_ptr<StreamLoader> stream_loader_;
