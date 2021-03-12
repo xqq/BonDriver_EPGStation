@@ -28,12 +28,20 @@ static constexpr const char* file_name(const char* path) {
     #endif
 #endif
 
+#ifndef LOG_FUNCTION
+    #define LOG_FUNCTION "%s()",__FUNCTION_NAME__
+#endif
+
+#ifndef LOG_FUNCTION_MESSAGE
+    #define LOG_FUNCTION_MESSAGE(m) "%s(): %s",__FUNCTION_NAME__,m
+#endif
+
 #ifndef LOG_FILE_FUNCTION
     #define LOG_FILE_FUNCTION "%s:%d:%s()",__SHORT_FILE__,__LINE__,__FUNCTION_NAME__
 #endif
 
 #ifndef LOG_FILE_FUNCTION_MESSAGE
-    #define LOG_FILE_FUNCTION_MESSAGE(m) "%s:%d:%s():%s",__SHORT_FILE__,__LINE__,__FUNCTION_NAME__,m
+    #define LOG_FILE_FUNCTION_MESSAGE(m) "%s:%d:%s(): %s",__SHORT_FILE__,__LINE__,__FUNCTION_NAME__,m
 #endif
 
 #ifndef LOG_FILE_MESSAGE
