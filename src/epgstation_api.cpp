@@ -13,6 +13,7 @@ using json = nlohmann::json;
 
 static const char* kEPGStationAPIConfig = "/api/config";
 static const char* kEPGStationAPIChannels = "/api/channels";
+static const char* kEPGStationAPIBroadcasting = "/api/schedule/broadcasting";
 static const char* kEPGStationAPIStreamsLive = "/api/streams/live/";
 
 EPGStationAPI::EPGStationAPI(const std::string& base_url) : base_url_(base_url), has_basic_auth_(false) { }
@@ -70,6 +71,30 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
     EPGStation::Channels channels = j.get<EPGStation::Channels>();
 
     return channels;
+}
+
+std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
+    cpr::Session session;
+    session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPIBroadcasting});
+
+    if (has_basic_auth_) {
+        session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    cpr::Response response = session.Get();
+
+    if (response.error) {
+        Log::ErrorF("curl failed for %s: error_code = %d, msg = %s", kEPGStationAPIBroadcasting, response.error.code, response.error.message.c_str());
+        return std::nullopt;
+    } else if (response.status_code >= 400) {
+        Log::ErrorF("%s error: status_code = %d, body = %s", kEPGStationAPIBroadcasting, response.status_code, response.text.c_str());
+        return std::nullopt;
+    }
+
+    json j = json::parse(response.text);
+    EPGStation::Broadcasting broadcasting = j.get<EPGStation::Broadcasting>();
+
+    return broadcasting;
 }
 
 std::string EPGStationAPI::GetMpegtsLiveStreamPathQuery(int64_t id, int encode_mode) {

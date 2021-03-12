@@ -26,17 +26,25 @@ void from_json(const nlohmann::json& json, Channel& channel) {
     channel.service_id = json.at("serviceId").get<int>();
     channel.network_id = json.at("networkId").get<int>();
     channel.name = json.at("name").get<std::string>();
+    channel.has_logo_data = json.at("hasLogoData").get<int>();
+    channel.channel_type = json.at("channelType").get<std::string>();
 
     // optional field
     if (json.find("remoteControlKeyId") != json.end()) {
         channel.remote_control_key_id = json.at("remoteControlKeyId").get<int>();
     }
 
-    channel.has_logo_data = json.at("hasLogoData").get<int>();
-    channel.channel_type = json.at("channelType").get<std::string>();
-    channel.channel_type_id = json.at("channelTypeId").get<int>();
-    channel.channel = json.at("channel").get<std::string>();
-    channel.type = json.at("type").get<int>();
+    if (json.find("channelTypeId") != json.end()) {
+        channel.channel_type_id = json.at("channelTypeId").get<int>();
+    }
+
+    if (json.find("channel") != json.end()) {
+        channel.channel = json.at("channel").get<std::string>();
+    }
+
+    if (json.find("type") != json.end()) {
+        channel.type = json.at("type").get<int>();
+    }
 }
 
 // Channels
@@ -46,6 +54,15 @@ void from_json(const nlohmann::json& json, Channels& channels) {
     for (const nlohmann::json& element : json) {
         auto channel = element.get<Channel>();
         channels.channels.push_back(std::move(channel));
+    }
+}
+
+void from_json(const nlohmann::json& json, Broadcasting& broadcasting) {
+    assert(json.is_array());
+
+    for (const nlohmann::json& element : json) {
+        auto channel = element["channel"].get<Channel>();
+        broadcasting.channels.push_back(std::move(channel));
     }
 }
 

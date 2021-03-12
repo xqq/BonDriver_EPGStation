@@ -35,6 +35,10 @@ struct Channels {
     std::vector<Channel> channels;
 };
 
+struct Broadcasting {
+    std::vector<Channel> channels;
+};
+
 struct Config {
 public:
     struct Broadcast {
