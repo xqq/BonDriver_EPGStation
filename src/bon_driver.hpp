@@ -5,8 +5,16 @@
 #ifndef BONDRIVER_EPGSTATION_BON_DRIVER_HPP
 #define BONDRIVER_EPGSTATION_BON_DRIVER_HPP
 
+#include <vector>
+#include <string>
+#include <unordered_set>
+#include <memory>
 #include "IBonDriver2.h"
 #include "config.hpp"
+#include "epgstation_models.hpp"
+#include "epgstation_api.hpp"
+
+class StreamLoader;
 
 class BonDriver : public IBonDriver2 {
 public:
@@ -33,7 +41,24 @@ protected:
     const DWORD GetCurSpace(void) override;
     const DWORD GetCurChannel(void) override;
 private:
-    const Config& config_;
+    void InitChannels();
+private:
+    const Config& yaml_config_;
+    EPGStationAPI api_;
+
+    EPGStation::Config epgstation_config_;
+    EPGStation::Channels channels_;
+
+    size_t chunk_size_ = 188 * 1024;
+    std::unique_ptr<StreamLoader> stream_loader_;
+
+    EPGStation::Channel current_channel_;
+    DWORD current_dwspace_ = 0;
+    DWORD current_dwchannel_ = 0;
+
+    std::unordered_set<std::string> space_set_;
+    std::vector<std::string> space_types_;
+    std::vector<size_t> space_channel_bases_;
 };
 
 
