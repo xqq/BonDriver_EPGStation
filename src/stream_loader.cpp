@@ -129,7 +129,7 @@ bool StreamLoader::OnHeaderCallback(std::string data) {
         return false;
     }
 
-    Log::InfoF("StreamLoader::OnHeaderCallback(): Received response with status code: %d", status_code);
+    Log::InfoF("StreamLoader::OnHeaderCallback(): Received response code: %d, start polling", status_code);
     // 20x OK, notify WaitForResponse and continue transfer
     return true;
 }
