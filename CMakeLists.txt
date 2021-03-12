@@ -185,9 +185,7 @@ endif()
 if(WIN32)
     target_link_libraries(BonDriver_EPGStation
         PRIVATE
-            Winmm
             Version
-            SetupAPI
             Ws2_32
     )
 endif()
