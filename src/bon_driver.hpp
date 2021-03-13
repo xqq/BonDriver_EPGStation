@@ -46,6 +46,7 @@ private:
     const Config& yaml_config_;
     EPGStationAPI api_;
 
+    bool init_channels_succeed = false;
     EPGStation::Config epgstation_config_;
     std::vector<EPGStation::Channel> channels_;
 

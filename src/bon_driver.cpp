@@ -81,10 +81,17 @@ void BonDriver::InitChannels() {
             space_channel_bases_.push_back(i);
         }
     }
+
+    init_channels_succeed = true;
 }
 
 const BOOL BonDriver::OpenTuner(void) {
     Log::InfoF(LOG_FUNCTION);
+
+    if (!init_channels_succeed) {
+        Log::ErrorF("OpenTuner() failed caused by the failure of initializing channels");
+        return FALSE;
+    }
 
     if (!epgstation_config_.enable_live_streaming) {
         Log::ErrorF("config->enable_live_streaming is false, OpenTuner() failed");
