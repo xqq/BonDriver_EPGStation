@@ -60,6 +60,11 @@ bool Config::LoadYamlFile(const std::string& filename) {
         if (config["showInactiveServices"]) {
             show_inactive_services_ = config["showInactiveServices"].as<bool>();
         } // else: showInactiveServices is optional
+
+        if (config["proxy"]) {
+            proxy_ = config["proxy"].as<std::string>();
+        } // else: proxy is optional
+
     } catch (YAML::BadFile& ex) {
         Log::ErrorF("Load yaml file failed, %s", ex.what());
         return false;
@@ -94,4 +99,8 @@ std::optional<int> Config::GetMpegTsStreamingMode() const {
 
 std::optional<bool> Config::GetShowInactiveServices() const {
     return show_inactive_services_;
+}
+
+std::optional<std::string> Config::GetProxy() const {
+    return proxy_;
 }
