@@ -22,6 +22,13 @@
 
 class StreamLoader {
 public:
+    enum class WaitResult {
+        kResultOK,
+        kResultFailed,
+        kWaitTimeout,
+        kWaitFailed
+    };
+public:
     StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count);
     ~StreamLoader();
     bool Open(const std::string& base_url,
@@ -31,8 +38,8 @@ public:
               std::optional<std::string> proxy = std::nullopt,
               std::optional<std::map<std::string, std::string>> headers = std::nullopt);
     void Abort();
-    bool WaitForResponse();
-    bool WaitForData();
+    WaitResult WaitForResponse(std::chrono::milliseconds timeout);
+    WaitResult WaitForData();
     size_t Read(uint8_t* buffer, size_t expected_bytes);
     std::pair<uint8_t*, size_t> ReadChunkAndRetain();
     size_t RemainReadable();

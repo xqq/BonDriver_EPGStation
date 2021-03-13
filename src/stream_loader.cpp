@@ -94,28 +94,50 @@ bool StreamLoader::Open(const std::string& base_url,
     return true;
 }
 
-bool StreamLoader::WaitForResponse() {
+StreamLoader::WaitResult StreamLoader::WaitForResponse(std::chrono::milliseconds timeout) {
     std::unique_lock lock(response_mutex_);
-    if (has_response_received_ && !request_failed_) {
-        return true;
+
+    if (!has_requested_) {
+        return WaitResult::kWaitFailed;
     }
 
-    response_cv_.wait(lock, [this] {
+    if (has_response_received_ && !request_failed_) {
+        return WaitResult::kResultOK;
+    }
+
+    bool pred = response_cv_.wait_for(lock, timeout, [this] {
         return has_response_received_;
     });
 
-    // If [has_response_received_] and [not request_failed_], that's succeed
-    return !request_failed_;
+    if (!pred) {
+        return WaitResult::kWaitTimeout;
+    }
+
+    // [has_response_received_] should be true here
+
+    if (request_failed_) {
+        return WaitResult::kResultFailed;
+    }
+
+    return WaitResult::kResultOK;
 }
 
-bool StreamLoader::WaitForData() {
+StreamLoader::WaitResult StreamLoader::WaitForData() {
+    if (!has_requested_) {
+        return WaitResult::kWaitFailed;
+    }
+
     if (request_failed_) {
-        return false;
+        return WaitResult::kResultFailed;
     }
 
     blocking_buffer_.WaitUntilData();
 
-    return !request_failed_;
+    if (request_failed_) {
+        return WaitResult::kResultFailed;
+    }
+
+    return WaitResult::kResultOK;
 }
 
 bool StreamLoader::OnHeaderCallback(std::string data) {
@@ -144,7 +166,7 @@ bool StreamLoader::OnHeaderCallback(std::string data) {
     CURLcode ret = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status_code);
 
     // 40x error, set request_failed_ to false and cancel transfer
-    if (ret == CURLE_OK && status_code >= 400) {
+    if (ret == CURLcode::CURLE_OK && status_code >= 400) {
         Log::ErrorF("StreamLoader::OnHeaderCallback(): Invalid status code: %d", status_code);
         request_failed_ = true;
         return false;

@@ -176,13 +176,27 @@ const float BonDriver::GetSignalLevel(void) {
 
 const DWORD BonDriver::WaitTsStream(const DWORD dwTimeOut) {
     if (!stream_loader_) {
-        return static_cast<DWORD>(-1);
+        return WAIT_ABANDONED;
     }
 
-    stream_loader_->WaitForResponse();
-    stream_loader_->WaitForData();
-    // TODO: Return value
-    return 0;
+    auto wait_result = stream_loader_->WaitForResponse(std::chrono::milliseconds(dwTimeOut));
+    if (wait_result == StreamLoader::WaitResult::kWaitFailed) {
+        return WAIT_FAILED;
+    } else if (wait_result == StreamLoader::WaitResult::kWaitTimeout) {
+        Log::ErrorF("BonDriver::WaitTsStream(): WaitForResponse() waiting timeout for %u ms", dwTimeOut);
+        return WAIT_TIMEOUT;
+    } else if (wait_result == StreamLoader::WaitResult::kResultFailed) {
+        return WAIT_ABANDONED;
+    } // else: wait_result == WaitResult::kResultOK
+
+    wait_result = stream_loader_->WaitForData();
+    if (wait_result == StreamLoader::WaitResult::kWaitFailed) {
+        return WAIT_FAILED;
+    } else if (wait_result == StreamLoader::WaitResult::kResultFailed) {
+        return WAIT_ABANDONED;
+    } // else: wait_result == WaitResult::kResultOK
+
+    return WAIT_OBJECT_0;
 }
 
 const DWORD BonDriver::GetReadyCount(void) {
