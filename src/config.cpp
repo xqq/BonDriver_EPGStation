@@ -61,6 +61,13 @@ bool Config::LoadYamlFile(const std::string& filename) {
             show_inactive_services_ = config["showInactiveServices"].as<bool>();
         } // else: showInactiveServices is optional
 
+        if (config["userAgent"]) {
+            user_agent_ = config["userAgent"].as<std::string>();
+        } else {
+            // default UserAgent
+            user_agent_ = "BonDriver_Mirakurun";
+        }
+
         if (config["proxy"]) {
             proxy_ = config["proxy"].as<std::string>();
         } // else: proxy is optional
@@ -99,6 +106,10 @@ std::optional<int> Config::GetMpegTsStreamingMode() const {
 
 std::optional<bool> Config::GetShowInactiveServices() const {
     return show_inactive_services_;
+}
+
+std::optional<std::string> Config::GetUserAgent() const {
+    return user_agent_;
 }
 
 std::optional<std::string> Config::GetProxy() const {
