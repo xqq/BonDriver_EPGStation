@@ -52,7 +52,7 @@ cmake -DCMAKE_BUILD_TYPE=MinSizeRel -A x64 ..       # or Build for x64 (x64)
 
 ### Compiling
 ```bash
-cmake --build . -j8
+cmake --build . --config MinSizeRel -j8
 ```
 
 Visual Studio 2019 (CMake development) or CLion (MSVC toolchain) is recommended.
