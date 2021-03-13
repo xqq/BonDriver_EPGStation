@@ -6,7 +6,7 @@
 #include "stream_loader.hpp"
 #include "bon_driver.hpp"
 
-BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.GetBaseURL().value()) {
+BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.GetBaseURL().value(), config.GetVersion().value()) {
     Log::InfoF(LOG_FUNCTION);
     if (config.GetBasicAuth().has_value()) {
         api_.SetBasicAuth(config.GetBasicAuth()->user, config.GetBasicAuth()->password);

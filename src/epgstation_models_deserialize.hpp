@@ -68,7 +68,14 @@ void from_json(const nlohmann::json& json, Broadcasting& broadcasting) {
 
 // Config
 void from_json(const nlohmann::json& json, Config& config) {
-    config.enable_live_streaming = json.at("enableLiveStreaming").get<bool>();
+    if (json.find("enableLiveStreaming") != json.end()) {
+        // EPGStation v1
+        config.enable_live_streaming = json.at("enableLiveStreaming").get<bool>();
+    } else if (json.find("isEnableTSLiveStream") != json.end()) {
+        // EPGStation v2
+        config.enable_live_streaming = json.at("isEnableTSLiveStream").get<bool>();
+    }
+
     config.broadcast.GR = json["broadcast"]["GR"].get<bool>();
     config.broadcast.BS = json["broadcast"]["BS"].get<bool>();
     config.broadcast.CS = json["broadcast"]["CS"].get<bool>();
