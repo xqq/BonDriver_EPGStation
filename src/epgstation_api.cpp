@@ -36,6 +36,11 @@ void EPGStationAPI::SetProxy(const std::string& proxy) {
     proxy_ = proxy;
 }
 
+void EPGStationAPI::SetHeaders(const std::map<std::string, std::string>& headers) {
+    has_headers_ = true;
+    headers_ = headers;
+}
+
 std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
     cpr::Session session;
     session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPI_Config});
@@ -51,6 +56,13 @@ std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
     if (has_proxy_) {
         session.SetProxies({{"http", proxy_},
                             {"https", proxy_}});
+    }
+
+    if (has_headers_) {
+        for (auto& pair : headers_) {
+            cpr::Header header{{pair.first, pair.second}};
+            session.UpdateHeader(header);
+        }
     }
 
     cpr::Response response = session.Get();
@@ -84,6 +96,13 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
     if (has_proxy_) {
         session.SetProxies({{"http", proxy_},
                             {"https", proxy_}});
+    }
+
+    if (has_headers_) {
+        for (auto& pair : headers_) {
+            cpr::Header header{{pair.first, pair.second}};
+            session.UpdateHeader(header);
+        }
     }
 
     cpr::Response response = session.Get();
@@ -122,6 +141,13 @@ std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
     if (has_proxy_) {
         session.SetProxies({{"http", proxy_},
                             {"https", proxy_}});
+    }
+
+    if (has_headers_) {
+        for (auto& pair : headers_) {
+            cpr::Header header{{pair.first, pair.second}};
+            session.UpdateHeader(header);
+        }
     }
 
     cpr::Response response = session.Get();

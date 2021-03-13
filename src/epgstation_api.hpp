@@ -15,6 +15,7 @@ public:
     void SetBasicAuth(const std::string& user, const std::string& password);
     void SetUserAgent(const std::string& user_agent);
     void SetProxy(const std::string& proxy);
+    void SetHeaders(const std::map<std::string, std::string>& headers);
     std::optional<EPGStation::Config> GetConfig();
     std::optional<EPGStation::Channels> GetChannels();
     std::optional<EPGStation::Broadcasting> GetBroadcasting();
@@ -32,6 +33,9 @@ private:
 
     bool has_proxy_ = false;
     std::string proxy_;
+
+    bool has_headers_ = false;
+    std::map<std::string, std::string> headers_;
 };
 
 

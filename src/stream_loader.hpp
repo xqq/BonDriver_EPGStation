@@ -28,7 +28,8 @@ public:
               const std::string& path_query,
               std::optional<BasicAuth> basic_auth = std::nullopt,
               std::optional<std::string> user_agent = std::nullopt,
-              std::optional<std::string> proxy = std::nullopt);
+              std::optional<std::string> proxy = std::nullopt,
+              std::optional<std::map<std::string, std::string>> headers = std::nullopt);
     void Abort();
     bool WaitForResponse();
     bool WaitForData();

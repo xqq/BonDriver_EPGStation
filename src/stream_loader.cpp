@@ -28,7 +28,8 @@ bool StreamLoader::Open(const std::string& base_url,
                         const std::string& path_query,
                         std::optional<BasicAuth> basic_auth,
                         std::optional<std::string> user_agent,
-                        std::optional<std::string> proxy) {
+                        std::optional<std::string> proxy,
+                        std::optional<std::map<std::string, std::string>> headers) {
     std::string url = base_url + path_query;
     Log::InfoF("StreamLoader::Open(): Opening %s", url.c_str());
 
@@ -45,6 +46,13 @@ bool StreamLoader::Open(const std::string& base_url,
     if (proxy) {
         session_.SetProxies({{"http", proxy.value()},
                              {"https", proxy.value()}});
+    }
+
+    if (headers) {
+        for (const auto& pair : headers.value()) {
+            cpr::Header header{{pair.first, pair.second}};
+            session_.UpdateHeader(header);
+        }
     }
 
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));

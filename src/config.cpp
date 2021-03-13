@@ -72,6 +72,20 @@ bool Config::LoadYamlFile(const std::string& filename) {
             proxy_ = config["proxy"].as<std::string>();
         } // else: proxy is optional
 
+        if (config["headers"]) {
+            auto& headers_node = config["headers"];
+
+            if (headers_node.IsMap()) {
+                std::map<std::string, std::string> headers;
+                for (auto iter = headers_node.begin(); iter != headers_node.end(); ++iter) {
+                    headers.insert({iter->first.as<std::string>(), iter->second.as<std::string>()});
+                }
+                headers_ = headers;
+            } else {
+                Log::ErrorF("headers field must be a map");
+            }
+        } // else: headers is optional
+
     } catch (YAML::BadFile& ex) {
         Log::ErrorF("Load yaml file failed, %s", ex.what());
         return false;
@@ -114,4 +128,8 @@ std::optional<std::string> Config::GetUserAgent() const {
 
 std::optional<std::string> Config::GetProxy() const {
     return proxy_;
+}
+
+std::optional<std::map<std::string, std::string>> Config::GetHeaders() const {
+    return headers_;
 }

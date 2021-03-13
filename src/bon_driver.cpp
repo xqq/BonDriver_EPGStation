@@ -8,6 +8,7 @@
 
 BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.GetBaseURL().value(), config.GetVersion().value()) {
     Log::InfoF(LOG_FUNCTION);
+
     if (config.GetBasicAuth().has_value()) {
         api_.SetBasicAuth(config.GetBasicAuth()->user, config.GetBasicAuth()->password);
     }
@@ -17,6 +18,10 @@ BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.G
     if (config.GetProxy().has_value()) {
         api_.SetProxy(config.GetProxy().value());
     }
+    if (config.GetHeaders().has_value()) {
+        api_.SetHeaders(config.GetHeaders().value());
+    }
+
     InitChannels();
 }
 
@@ -149,7 +154,8 @@ const BOOL BonDriver::SetChannel(const DWORD dwSpace, const DWORD dwChannel) {
                          path_query,
                          yaml_config_.GetBasicAuth(),
                          yaml_config_.GetUserAgent(),
-                         yaml_config_.GetProxy());
+                         yaml_config_.GetProxy(),
+                         yaml_config_.GetHeaders());
 
     return TRUE;
 }
