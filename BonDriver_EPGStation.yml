@@ -1,7 +1,4 @@
 baseURL: http://127.0.0.1/
 version: v1
-basicAuth:
-  user: admin
-  password: admin
 mpegTsStreamingMode: 0
 showInactiveServices: false
