@@ -82,6 +82,15 @@ if(WIN32)
     set_target_properties(BonDriver_EPGStation PROPERTIES PREFIX "")
 endif()
 
+# Copy yaml config file to binary output directory
+add_custom_command(
+    TARGET
+        BonDriver_EPGStation
+    POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_SOURCE_DIR}/BonDriver_EPGStation.yml ${CMAKE_BINARY_DIR}/
+)
+
+
 # On Windows, Set Character set (TCHAR) to Unicode
 if(WIN32)
     target_compile_definitions(BonDriver_EPGStation

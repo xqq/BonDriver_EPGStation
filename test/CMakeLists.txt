@@ -8,6 +8,11 @@ add_executable(BonDriver_EPGStation_test
         main.cpp
 )
 
+set_target_properties(BonDriver_EPGStation_test
+    PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+
 # Platform-specific compiler macro / flags
 if(MSVC)
     # For MSVC, disable CRT secure warnings
@@ -39,13 +44,4 @@ target_include_directories(BonDriver_EPGStation_test
 target_link_libraries(BonDriver_EPGStation_test
     PRIVATE
         BonDriver_EPGStation
-)
-
-# Copy BonDriver_EPGStation dll file to BonDriver_EPGStation_test directory
-add_custom_command(
-    TARGET
-        BonDriver_EPGStation_test
-    POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:BonDriver_EPGStation> ${CMAKE_BINARY_DIR}/test/
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PROJECT_SOURCE_DIR}/BonDriver_EPGStation.yml ${CMAKE_BINARY_DIR}/test/
 )
