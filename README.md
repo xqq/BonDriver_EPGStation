@@ -5,6 +5,7 @@ BonDriver for [EPGStation](https://github.com/l3tnun/EPGStation) that could be u
 ## Features
 - Both EPGStation v1 and v2 are supported
 - http / https / http2 supported
+- IPv6 supported
 - Proxy configuration
 - UserAgent & custom request headers configuration
 - CRT is static-linked so does not require extra VCRuntime
