@@ -122,13 +122,16 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
 }
 
 std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
-    cpr::Session session;
+    const char* path_query = "";
 
     if (version_ == kEPGStationVersionV1) {
-        session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPIv1_Broadcasting});
+        path_query = kEPGStationAPIv1_Broadcasting;
     } else if (version_ == kEPGStationVersionV2) {
-        session.SetUrl(cpr::Url{this->base_url_ + kEPGStationAPIv2_Broadcasting});
+        path_query = kEPGStationAPIv2_Broadcasting;
     }
+
+    cpr::Session session;
+    session.SetUrl(cpr::Url{this->base_url_ + path_query});
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
@@ -153,10 +156,10 @@ std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
     cpr::Response response = session.Get();
 
     if (response.error) {
-        Log::ErrorF("curl failed for %s: error_code = %d, msg = %s", kEPGStationAPIv1_Broadcasting, response.error.code, response.error.message.c_str());
+        Log::ErrorF("curl failed for %s: error_code = %d, msg = %s", path_query, response.error.code, response.error.message.c_str());
         return std::nullopt;
     } else if (response.status_code >= 400) {
-        Log::ErrorF("%s error: status_code = %d, body = %s", kEPGStationAPIv1_Broadcasting, response.status_code, response.text.c_str());
+        Log::ErrorF("%s error: status_code = %d, body = %s", path_query, response.status_code, response.text.c_str());
         return std::nullopt;
     }
 
