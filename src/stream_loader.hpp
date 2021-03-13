@@ -24,7 +24,10 @@ class StreamLoader {
 public:
     StreamLoader(size_t chunk_size, size_t max_chunk_count, size_t min_chunk_count);
     ~StreamLoader();
-    bool Open(const std::string& base_url, const std::string& path_query, std::optional<BasicAuth> basic_auth = std::nullopt);
+    bool Open(const std::string& base_url,
+              const std::string& path_query,
+              std::optional<BasicAuth> basic_auth = std::nullopt,
+              std::optional<std::string> proxy = std::nullopt);
     void Abort();
     bool WaitForResponse();
     bool WaitForData();

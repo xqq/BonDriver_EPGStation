@@ -11,11 +11,9 @@
 
 class EPGStationAPI {
 public:
-
-public:
     EPGStationAPI(const std::string& base_url, EPGStationVersion version);
-
     void SetBasicAuth(const std::string& user, const std::string& password);
+    void SetProxy(const std::string& proxy);
     std::optional<EPGStation::Config> GetConfig();
     std::optional<EPGStation::Channels> GetChannels();
     std::optional<EPGStation::Broadcasting> GetBroadcasting();
@@ -26,6 +24,8 @@ private:
     bool has_basic_auth_ = false;
     std::string basicauth_user_;
     std::string basicauth_password_;
+    bool has_proxy_ = false;
+    std::string proxy_;
 };
 
 

@@ -11,6 +11,9 @@ BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.G
     if (config.GetBasicAuth().has_value()) {
         api_.SetBasicAuth(config.GetBasicAuth()->user, config.GetBasicAuth()->password);
     }
+    if (config.GetProxy().has_value()) {
+        api_.SetProxy(config.GetProxy().value());
+    }
     InitChannels();
 }
 
@@ -139,7 +142,10 @@ const BOOL BonDriver::SetChannel(const DWORD dwSpace, const DWORD dwChannel) {
 
     std::string path_query = api_.GetMpegtsLiveStreamPathQuery(channel.id, yaml_config_.GetMpegTsStreamingMode().value());
 
-    stream_loader_->Open(yaml_config_.GetBaseURL().value(), path_query, yaml_config_.GetBasicAuth());
+    stream_loader_->Open(yaml_config_.GetBaseURL().value(),
+                         path_query,
+                         yaml_config_.GetBasicAuth(),
+                         yaml_config_.GetProxy());
 
     return TRUE;
 }

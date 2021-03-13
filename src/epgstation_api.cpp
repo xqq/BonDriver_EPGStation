@@ -18,12 +18,17 @@ static const char* kEPGStationAPIv2_Broadcasting = "/api/schedules/broadcasting?
 static const char* kEPGStationAPI_StreamsLive = "/api/streams/live/";
 
 EPGStationAPI::EPGStationAPI(const std::string& base_url, EPGStationVersion version)
-    : base_url_(base_url), version_(version), has_basic_auth_(false) { }
+    : base_url_(base_url), version_(version) {}
 
 void EPGStationAPI::SetBasicAuth(const std::string& user, const std::string& password) {
     has_basic_auth_ = true;
     basicauth_user_ = user;
     basicauth_password_ = password;
+}
+
+void EPGStationAPI::SetProxy(const std::string& proxy) {
+    has_proxy_ = true;
+    proxy_ = proxy;
 }
 
 std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
@@ -32,6 +37,11 @@ std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_proxy_) {
+        session.SetProxies({{"http", proxy_},
+                            {"https", proxy_}});
     }
 
     cpr::Response response = session.Get();
@@ -56,6 +66,11 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_proxy_) {
+        session.SetProxies({{"http", proxy_},
+                            {"https", proxy_}});
     }
 
     cpr::Response response = session.Get();
@@ -85,6 +100,11 @@ std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_proxy_) {
+        session.SetProxies({{"http", proxy_},
+                            {"https", proxy_}});
     }
 
     cpr::Response response = session.Get();

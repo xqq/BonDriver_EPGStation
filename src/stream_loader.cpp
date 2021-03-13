@@ -24,7 +24,10 @@ StreamLoader::~StreamLoader() {
     }
 }
 
-bool StreamLoader::Open(const std::string& base_url, const std::string& path_query, std::optional<BasicAuth> basic_auth) {
+bool StreamLoader::Open(const std::string& base_url,
+                        const std::string& path_query,
+                        std::optional<BasicAuth> basic_auth,
+                        std::optional<std::string> proxy) {
     std::string url = base_url + path_query;
     Log::InfoF("StreamLoader::Open(): Opening %s", url.c_str());
 
@@ -32,6 +35,11 @@ bool StreamLoader::Open(const std::string& base_url, const std::string& path_que
 
     if (basic_auth) {
         session_.SetAuth(cpr::Authentication{basic_auth->user, basic_auth->password});
+    }
+
+    if (proxy) {
+        session_.SetProxies({{"http", proxy.value()},
+                             {"https", proxy.value()}});
     }
 
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
