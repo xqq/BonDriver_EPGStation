@@ -58,13 +58,20 @@ bool StreamLoader::Open(const std::string& base_url,
     session_.SetHeaderCallback(cpr::HeaderCallback(std::bind(&StreamLoader::OnHeaderCallback, this, _1)));
     session_.SetWriteCallback(cpr::WriteCallback(std::bind(&StreamLoader::OnWriteCallback, this, _1)));
 
+    auto holder = session_.GetCurlHolder();
+    CURL* curl = holder->handle;
+    curl_easy_setopt(curl, CURLOPT_OPENSOCKETFUNCTION, &StreamLoader::OnOpenSocketCallback);
+    curl_easy_setopt(curl, CURLOPT_OPENSOCKETDATA, this);
+
     has_requested_ = true;
 
     async_response_ = std::async(std::launch::async, [this] {
         cpr::Response response = session_.Get();
         bool has_error = false;
 
-        if (response.error && response.error.code != cpr::ErrorCode::REQUEST_CANCELLED) {
+        if (socket_ == INVALID_SOCKET) {
+            Log::Info("StreamLoader::Open(): curl socket has been force closed by Abort()");
+        } else if (response.error && response.error.code != cpr::ErrorCode::REQUEST_CANCELLED) {
             has_error = true;
             Log::ErrorF("StreamLoader::Open(): curl failed with error_code: %d, msg = %s",
                         response.error.code,
@@ -140,6 +147,20 @@ StreamLoader::WaitResult StreamLoader::WaitForData() {
     return WaitResult::kResultOK;
 }
 
+curl_socket_t StreamLoader::OnOpenSocketCallback(StreamLoader* self, curlsocktype purpose, curl_sockaddr* addr) {
+    SOCKET sock = socket(addr->family, addr->socktype, addr->protocol);
+    self->socket_ = sock;
+    return sock;
+}
+
+void StreamLoader::ForceShutdown() {
+    if (socket_ != INVALID_SOCKET) {
+        shutdown(socket_, SD_BOTH);
+        closesocket(socket_);
+        socket_ = INVALID_SOCKET;
+    }
+}
+
 bool StreamLoader::OnHeaderCallback(std::string data) {
     if (has_requested_abort_) {
         // return false to cancel the transfer
@@ -194,6 +215,12 @@ void StreamLoader::Abort() {
     Log::InfoF("StreamLoader::Abort(): Aborting");
     has_requested_abort_ = true;
     blocking_buffer_.NotifyExit();
+
+    if (!has_response_received_) {
+        // If server hasn't returned any response, force kill the underlying socket
+        ForceShutdown();
+    }
+
     async_response_.wait();
 }
 

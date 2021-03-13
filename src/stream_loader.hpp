@@ -46,6 +46,10 @@ public:
     bool IsPolling();
     float GetCurrentSpeedKByte();
 private:
+    static curl_socket_t OnOpenSocketCallback(StreamLoader* self, curlsocktype purpose, curl_sockaddr* addr);
+private:
+    void ForceShutdown();
+private:
     bool OnHeaderCallback(std::string data);
     bool OnWriteCallback(std::string data);
 private:
@@ -61,6 +65,7 @@ private:
     SpeedSampler speed_sampler_;
 
     cpr::Session session_;
+    SOCKET socket_ = INVALID_SOCKET;
     std::future<cpr::Response> async_response_;
 
     std::mutex response_mutex_;
