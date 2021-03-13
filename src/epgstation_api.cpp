@@ -26,6 +26,11 @@ void EPGStationAPI::SetBasicAuth(const std::string& user, const std::string& pas
     basicauth_password_ = password;
 }
 
+void EPGStationAPI::SetUserAgent(const std::string& user_agent) {
+    has_user_agent_ = true;
+    user_agent_ = user_agent;
+}
+
 void EPGStationAPI::SetProxy(const std::string& proxy) {
     has_proxy_ = true;
     proxy_ = proxy;
@@ -37,6 +42,10 @@ std::optional<EPGStation::Config> EPGStationAPI::GetConfig() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_user_agent_) {
+        session.SetUserAgent({user_agent_});
     }
 
     if (has_proxy_) {
@@ -66,6 +75,10 @@ std::optional<EPGStation::Channels> EPGStationAPI::GetChannels() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_user_agent_) {
+        session.SetUserAgent({user_agent_});
     }
 
     if (has_proxy_) {
@@ -100,6 +113,10 @@ std::optional<EPGStation::Broadcasting> EPGStationAPI::GetBroadcasting() {
 
     if (has_basic_auth_) {
         session.SetAuth(cpr::Authentication{basicauth_user_, basicauth_password_});
+    }
+
+    if (has_user_agent_) {
+        session.SetUserAgent({user_agent_});
     }
 
     if (has_proxy_) {

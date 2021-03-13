@@ -11,6 +11,9 @@ BonDriver::BonDriver(const Config& config) : yaml_config_(config), api_(config.G
     if (config.GetBasicAuth().has_value()) {
         api_.SetBasicAuth(config.GetBasicAuth()->user, config.GetBasicAuth()->password);
     }
+    if (config.GetUserAgent().has_value()) {
+        api_.SetUserAgent(config.GetUserAgent().value());
+    }
     if (config.GetProxy().has_value()) {
         api_.SetProxy(config.GetProxy().value());
     }
@@ -145,6 +148,7 @@ const BOOL BonDriver::SetChannel(const DWORD dwSpace, const DWORD dwChannel) {
     stream_loader_->Open(yaml_config_.GetBaseURL().value(),
                          path_query,
                          yaml_config_.GetBasicAuth(),
+                         yaml_config_.GetUserAgent(),
                          yaml_config_.GetProxy());
 
     return TRUE;

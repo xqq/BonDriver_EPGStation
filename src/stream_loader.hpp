@@ -27,6 +27,7 @@ public:
     bool Open(const std::string& base_url,
               const std::string& path_query,
               std::optional<BasicAuth> basic_auth = std::nullopt,
+              std::optional<std::string> user_agent = std::nullopt,
               std::optional<std::string> proxy = std::nullopt);
     void Abort();
     bool WaitForResponse();
